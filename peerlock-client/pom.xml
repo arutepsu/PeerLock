@@ -47,6 +47,11 @@
             <artifactId>peerlock-common</artifactId>
             <version>peerlock_1</version>
         </dependency>
+        <dependency>
+            <groupId>com.peerlock</groupId>
+            <artifactId>peerlock-server</artifactId>
+            <version>peerlock_1</version>
+        </dependency>
     </dependencies>
 
     <build>

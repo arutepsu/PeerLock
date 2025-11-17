@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.peerlock.server.domain.PeerInfo;
+import com.peerlock.common.model.PeerInfo;
 import com.peerlock.server.service.PeerService;
 
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,6 +1,4 @@
-package com.peerlock.server.domain;
-
-import com.peerlock.common.model.PeerStatus;
+package com.peerlock.common.model;
 
 import java.time.Instant;
 

@@ -5,8 +5,8 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.peerlock.common.model.PeerInfo;
 import com.peerlock.common.model.PeerStatus;
-import com.peerlock.server.domain.PeerInfo;
 import com.peerlock.server.repository.PeerRegistry;
 
 @Service

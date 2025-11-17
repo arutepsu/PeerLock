@@ -8,7 +8,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.springframework.stereotype.Component;
 
-import com.peerlock.server.domain.PeerInfo;
+import com.peerlock.common.model.PeerInfo;
+
 
 /**
  * Simple thread-safe in-memory PeerRegistry implementation.

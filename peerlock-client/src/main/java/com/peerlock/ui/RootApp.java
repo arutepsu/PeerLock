@@ -2,6 +2,8 @@ package com.peerlock.ui;
 
 import com.peerlock.client.auth.AuthClient;
 import com.peerlock.client.auth.HttpAuthClient;
+import com.peerlock.client.peer.HttpPeerClient;
+import com.peerlock.client.peer.PeerClient;
 import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.AuthSuccessEvent;
 import com.peerlock.ui.event.EventBus;
@@ -49,13 +51,19 @@ public class RootApp extends Application {
     private void onAuthSuccess(AuthSuccessEvent event) {
         System.out.println("Authenticated as: " + event.getUsername());
 
+        PeerClient peerClient = new HttpPeerClient("http://localhost:8080/api/v1/peers");
+        int listeningPort = 6000;
+
         BaseScreen mainScreen = new MainScreen(
                 eventBus,
                 event.getUsername(),
-                event.getAccessToken()
+                event.getAccessToken(),
+                peerClient,
+                listeningPort
         );
         screenManager.show(mainScreen);
     }
+
 
     @Override
     public void stop() {
