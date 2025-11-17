@@ -1,0 +1,14 @@
+com\peerlock\server\service\PeerService.class
+com\peerlock\common\model\PeerStatus.class
+com\peerlock\server\domain\UserAccount.class
+com\peerlock\server\service\PeerNotFoundException.class
+com\peerlock\server\repository\InMemoryUserRepository.class
+com\peerlock\server\repository\InMemoryPeerRegistry.class
+com\peerlock\server\repository\SessionTokenStore.class
+AuthRequest.class
+com\peerlock\common\dto\RegisterPeerRequest.class
+com\peerlock\server\domain\PeerInfo.class
+com\peerlock\server\repository\UserRepository.class
+com\peerlock\server\repository\PeerRegistry.class
+com\peerlock\PeerLock.class
+com\peerlock\server\config\ServerConfig.class
