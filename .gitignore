@@ -97,7 +97,11 @@ application-secret.properties
 *.p12
 
 # ---------------------------------------
-# PeerLock-specific (optional)
+# PeerLock-specific
+peerlock-client/target/
+peerlock-server/target/
+peerlock-common/target/
 # ---------------------------------------
 # Stored user keys (local only)
 keys/
+
