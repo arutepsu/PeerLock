@@ -1,41 +1,28 @@
 package com.peerlock.server.service;
 
-import com.peerlock.common.model.PeerStatus;
-import com.peerlock.server.domain.PeerInfo;
-import com.peerlock.server.repository.PeerRegistry;
-import org.springframework.stereotype.Service;
-
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Application service that encapsulates peer-related business logic.
- */
+import org.springframework.stereotype.Service;
+
+import com.peerlock.common.model.PeerStatus;
+import com.peerlock.server.domain.PeerInfo;
+import com.peerlock.server.repository.PeerRegistry;
+
 @Service
 public class PeerService {
 
-    private final PeerRegistry registry;
+    private final PeerRegistry peerRegistry;
+    private final AuthService authService;
 
-    /**
-     * How long a peer is considered "online" since its lastSeen timestamp.
-     * You can later move this to configuration (application.yml).
-     */
-    private final Duration onlineTimeout = Duration.ofMinutes(2);
-
-    public PeerService(PeerRegistry registry) {
-        this.registry = registry;
+    public PeerService(PeerRegistry peerRegistry, AuthService authService) {
+        this.peerRegistry = peerRegistry;
+        this.authService = authService;
     }
 
-    /**
-     * Register a new peer or update an existing one for the given user.
-     *
-     * @param username the owning user's username (from auth token)
-     * @param host     host/ip where the P2P client is listening
-     * @param port     TCP port where the P2P client is listening
-     * @return the stored PeerInfo
-     */
-    public PeerInfo registerOrUpdate(String username, String host, int port) {
+    public void heartbeat(String accessToken, String host, int port) {
+        String username = authService.getUsernameFromToken(accessToken);
+
         PeerInfo info = new PeerInfo(
                 username,
                 host,
@@ -43,27 +30,35 @@ public class PeerService {
                 PeerStatus.ONLINE,
                 Instant.now()
         );
-        registry.registerOrUpdate(info);
-        return info;
+        peerRegistry.registerOrUpdate(info);
     }
 
-    /**
-     * List peers that are currently considered online.
-     */
-    public List<PeerInfo> listOnlinePeers() {
-        Instant threshold = Instant.now().minus(onlineTimeout);
-        return registry.listAll().stream()
-                .filter(p -> p.status() == PeerStatus.OFFLINE || p.status() == PeerStatus.ONLINE) // keep if you later support OFFLINE explicitly
+    public List<PeerInfo> getOnlinePeers(String accessToken) {
+        authService.getUsernameFromToken(accessToken);
+
+        return peerRegistry.listAll().stream()
                 .filter(p -> p.status() == PeerStatus.ONLINE)
-                .filter(p -> p.lastSeen().isAfter(threshold))
                 .toList();
     }
 
-    /**
-     * Get a peer by username or throw if not found.
-     */
-    public PeerInfo getPeer(String username) {
-        return registry.findByUsername(username)
-                .orElseThrow(() -> new PeerNotFoundException(username));
+    public PeerInfo getPeer(String accessToken, String targetUsername) {
+        authService.getUsernameFromToken(accessToken);
+
+        return peerRegistry.findByUsername(targetUsername)
+                .orElseThrow(() -> new PeerNotFoundException("Peer not found: " + targetUsername));
+    }
+
+    public void markOffline(String accessToken) {
+        String username = authService.getUsernameFromToken(accessToken);
+        peerRegistry.findByUsername(username).ifPresent(current -> {
+            PeerInfo updated = new PeerInfo(
+                    current.username(),
+                    current.host(),
+                    current.port(),
+                    PeerStatus.OFFLINE,
+                    Instant.now()
+            );
+            peerRegistry.registerOrUpdate(updated);
+        });
     }
 }

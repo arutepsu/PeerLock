@@ -1,16 +1,19 @@
 package com.peerlock.server.repository;
 
-import com.peerlock.server.domain.PeerInfo;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.springframework.stereotype.Component;
+
+import com.peerlock.server.domain.PeerInfo;
+
 /**
  * Simple thread-safe in-memory PeerRegistry implementation.
  */
+@Component
 public class InMemoryPeerRegistry implements PeerRegistry {
 
     // username -> PeerInfo
