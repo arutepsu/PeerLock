@@ -6,12 +6,8 @@ public interface ChatSession extends Closeable {
 
     String remoteUsername();
 
-    void sendMessage(String content);
+    void sendMessage(ChatMessage message);
 
-    /**
-     * Register a callback that will be called whenever a message
-     * is received on this session.
-     */
     void onMessageReceived(MessageListener listener);
 
     interface MessageListener {

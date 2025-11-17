@@ -3,6 +3,7 @@ package com.peerlock.client.chat.history;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,6 +13,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.peerlock.client.chat.ChatMessage;
+
 
 public class FileMessageStore implements MessageStore {
 
@@ -37,7 +39,7 @@ public class FileMessageStore implements MessageStore {
                 writer.newLine();
             }
         } catch (IOException e) {
-            // log in real app
+            // TODO log in real app
             e.printStackTrace();
         }
     }
@@ -48,7 +50,7 @@ public class FileMessageStore implements MessageStore {
         if (!Files.exists(file)) return List.of();
 
         List<ChatMessage> result = new ArrayList<>();
-        try (BufferedReader reader = Files.newBufferedReader(file)) {
+        try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
                 ChatMessage msg = mapper.readValue(line, ChatMessage.class);
@@ -70,6 +72,10 @@ public class FileMessageStore implements MessageStore {
         }
     }
 
+    /**
+     * Store history per "local ↔ other" conversation.
+     * File name is based on the *other* user, so both directions end up in the same file.
+     */
     private Path getFileFor(String from, String to) {
         String other = from.equals(localUsername) ? to : from;
         return baseDir.resolve(other + ".jsonl");

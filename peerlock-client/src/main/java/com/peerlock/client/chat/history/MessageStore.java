@@ -11,4 +11,5 @@ public interface MessageStore {
     List<ChatMessage> getHistoryWith(String otherUsername);
 
     void clearHistoryWith(String otherUsername);
+    
 }

@@ -7,6 +7,8 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.crypto.SecretKey;
+
 public class ChatServer implements AutoCloseable {
 
     private final String localUsername;
@@ -38,10 +40,12 @@ public class ChatServer implements AutoCloseable {
                 ChatHandshake.Result result =
                         ChatHandshake.performServerHandshake(socket, localUsername, "peerlock-client-0.1");
 
+                SecretKey key = result.sharedKey();
                 String remoteUsername = result.remoteUsername();
-                ChatSession session = new TcpChatSession(socket, localUsername, remoteUsername);
 
+                ChatSession session = new TcpChatSession(socket, localUsername, remoteUsername, key);
                 handler.onIncomingSession(session);
+
             }
         } catch (IOException e) {
             if (running) {

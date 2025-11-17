@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.crypto.SecretKey;
+
 import com.peerlock.client.chat.history.MessageStore;
 import com.peerlock.common.dto.PeerInfoResponse;
 
@@ -27,7 +29,10 @@ public class ChatManager {
 
     private void handleIncomingSession(ChatSession session) {
         sessions.put(session.remoteUsername(), session);
-        session.onMessageReceived(msg -> messageStore.appendMessage(msg));
+        session.onMessageReceived(msg -> {
+            messageStore.appendMessage(msg);
+            // also tell UI here later
+        });
     }
 
     /**
@@ -37,10 +42,16 @@ public class ChatManager {
         Socket socket = new Socket(peer.host(), peer.port());
         ChatHandshake.Result result =
                 ChatHandshake.performClientHandshake(socket, localUsername, "peerlock-client-0.1");
+
+        SecretKey key = result.sharedKey();
         String remoteUsername = result.remoteUsername();
 
-        ChatSession session = new TcpChatSession(socket, localUsername, remoteUsername);
-        session.onMessageReceived(msg -> messageStore.appendMessage(msg));
+        ChatSession session = new TcpChatSession(socket, localUsername, remoteUsername, key);
+
+        session.onMessageReceived(msg -> {
+            messageStore.appendMessage(msg);
+            // update UI
+        });
         sessions.put(remoteUsername, session);
         return session;
     }
@@ -76,12 +87,21 @@ public class ChatManager {
     
     public void sendMessage(String toUser, String content) {
         ChatSession session = sessions.get(toUser);
-        if (session == null) throw new IllegalStateException("No session with " + toUser);
+        if (session == null) {
+            throw new IllegalStateException("No session with " + toUser);
+        }
 
-        ChatMessage msg = new ChatMessage(localUsername, toUser, Instant.now(), content);
-        session.sendMessage(content);
+        ChatMessage msg = new ChatMessage(
+                localUsername,
+                toUser,
+                Instant.now(),
+                content
+        );
+
         messageStore.appendMessage(msg);
+        session.sendMessage(msg);
     }
+
 
     public List<ChatMessage> getHistoryWith(String otherUsername) {
         return messageStore.getHistoryWith(otherUsername);
