@@ -1,4 +1,4 @@
-package com.peerlock;
+package com.peerlock.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,9 +10,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Later, you could add profiles/modes for server vs client if you want.
  */
 @SpringBootApplication
-public class PeerLock {
+public class ServerAppLauncher {
 
     public static void main(String[] args) {
-        SpringApplication.run(PeerLock.class, args);
+        SpringApplication.run(ServerAppLauncher.class, args);
     }
 }
