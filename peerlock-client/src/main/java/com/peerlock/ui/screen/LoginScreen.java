@@ -1,11 +1,13 @@
 package com.peerlock.ui.screen;
 
-import java.util.function.Consumer;
-
+import com.peerlock.client.auth.AuthClient;
+import com.peerlock.common.dto.AuthRequest;
+import com.peerlock.common.dto.AuthResponse;
 import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.AuthSuccessEvent;
 import com.peerlock.ui.event.EventBus;
 
+import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -15,18 +17,18 @@ import javafx.scene.layout.VBox;
 public class LoginScreen extends BaseScreen {
 
     private final EventBus eventBus;
+    private final AuthClient authClient;
 
     private TextField usernameField;
     private PasswordField passwordField;
     private Button loginButton;
     private Label errorLabel;
 
-    private Consumer<AuthSuccessEvent> authSuccessListener;
-
-    public LoginScreen(EventBus eventBus /*, later: AuthClient authClient */) {
+    public LoginScreen(EventBus eventBus, AuthClient authClient) {
         this.eventBus = eventBus;
+        this.authClient = authClient;
     }
-
+    
     @Override
     protected void buildUI() {
         usernameField = new TextField();
@@ -44,26 +46,44 @@ public class LoginScreen extends BaseScreen {
 
     @Override
     protected void registerListeners() {
-        loginButton.setOnAction(e -> {
-            String user = usernameField.getText();
-            // TODO: add validation + real backend call later
-
-            // For now: immediately consider this "logged in"
-            eventBus.publish(new AuthSuccessEvent(user));
-        });
-
-        // Optional debug listener. You can delete this if you want.
-        authSuccessListener = event -> {
-            errorLabel.setText("Welcome " + event.getUsername());
-        };
-
-        eventBus.subscribe(AuthSuccessEvent.class, authSuccessListener);
+        loginButton.setOnAction(e -> doLogin());
+        passwordField.setOnAction(e -> doLogin());
     }
+
+    private void doLogin() {
+        String user = usernameField.getText();
+        String pass = passwordField.getText();
+
+        if (user == null || user.isBlank() || pass == null || pass.isBlank()) {
+            errorLabel.setText("Please enter username and password.");
+            return;
+        }
+
+        errorLabel.setText("Logging in...");
+
+        AuthRequest request = new AuthRequest(user, pass);
+
+        new Thread(() -> {
+            try {
+                AuthResponse response = authClient.login(request);
+
+                Platform.runLater(() -> {
+                    eventBus.publish(new AuthSuccessEvent(
+                            response.username(),
+                            response.accessToken()
+                    ));
+                });
+            } catch (Exception ex) {
+                Platform.runLater(() ->
+                        errorLabel.setText("Login failed: " + ex.getMessage())
+                );
+            }
+        }, "auth-login-thread").start();
+    }
+
 
     @Override
     protected void unregisterListeners() {
-        if (authSuccessListener != null) {
-            eventBus.unsubscribe(AuthSuccessEvent.class, authSuccessListener);
-        }
+        // no EventBus subscriptions here anymore
     }
 }

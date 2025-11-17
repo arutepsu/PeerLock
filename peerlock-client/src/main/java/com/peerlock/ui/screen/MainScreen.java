@@ -15,6 +15,7 @@ public class MainScreen extends BaseScreen {
 
     private final EventBus eventBus;
     private final String currentUser;
+    private final String accessToken;
 
     private Label headerLabel;
     private ListView<String> peersList;
@@ -23,9 +24,10 @@ public class MainScreen extends BaseScreen {
     private Button sendButton;
     private Button logoutButton;
 
-    public MainScreen(EventBus eventBus, String currentUser) {
+    public MainScreen(EventBus eventBus, String currentUser, String accessToken) {
         this.eventBus = eventBus;
         this.currentUser = currentUser;
+        this.accessToken = accessToken;
     }
 
     @Override

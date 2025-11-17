@@ -1,5 +1,7 @@
 package com.peerlock.ui;
 
+import com.peerlock.client.auth.AuthClient;
+import com.peerlock.client.auth.HttpAuthClient;
 import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.AuthSuccessEvent;
 import com.peerlock.ui.event.EventBus;
@@ -15,10 +17,12 @@ public class RootApp extends Application {
 
     private EventBus eventBus;
     private ScreenManager screenManager;
+    private AuthClient authClient;
 
     @Override
     public void init() {
         this.eventBus = new EventBus();
+        this.authClient = new HttpAuthClient("http://localhost:8080/api/v1/auth");
     }
 
     @Override
@@ -28,7 +32,7 @@ public class RootApp extends Application {
 
         registerGlobalEventHandlers();
 
-        BaseScreen loginScreen = new LoginScreen(eventBus);
+        BaseScreen loginScreen = new LoginScreen(eventBus, authClient);
         screenManager.show(loginScreen);
 
         primaryStage.setTitle("PeerLock");
@@ -45,7 +49,11 @@ public class RootApp extends Application {
     private void onAuthSuccess(AuthSuccessEvent event) {
         System.out.println("Authenticated as: " + event.getUsername());
 
-        BaseScreen mainScreen = new MainScreen(eventBus, event.getUsername());
+        BaseScreen mainScreen = new MainScreen(
+                eventBus,
+                event.getUsername(),
+                event.getAccessToken()
+        );
         screenManager.show(mainScreen);
     }
 
