@@ -1,1 +1,16 @@
-C:\Users\cgmar\IdeaProjects\peerlock\demo\src\main\java\com\peerlock\App.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\repository\InMemoryUserRepository.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\repository\SessionTokenStore.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\repository\InMemoryPeerRegistry.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\controller\PeerController.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\domain\UserAccount.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\common\model\PeerStatus.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\service\PeerNotFoundException.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\config\ServerConfig.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\domain\PeerInfo.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\PeerLock.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\repository\UserRepository.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\common\dto\PeerInfoResponse.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\common\dto\AuthRequest.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\repository\PeerRegistry.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\server\service\PeerService.java
+C:\Users\cgmar\IdeaProjects\peerlock\src\main\java\com\peerlock\common\dto\RegisterPeerRequest.java
