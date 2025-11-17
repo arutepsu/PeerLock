@@ -4,20 +4,13 @@ import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.AuthSuccessEvent;
 import com.peerlock.ui.event.EventBus;
 import com.peerlock.ui.screen.LoginScreen;
+import com.peerlock.ui.screen.MainScreen;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
-/**
- * Entry point of the PeerLock JavaFX client.
- *
- * Responsibilities:
- *  - Create shared infrastructure (EventBus, ScreenManager).
- *  - Show the initial screen (LoginScreen).
- *  - React to global events (e.g. AuthSuccessEvent) to switch screens.
- */
 public class RootApp extends Application {
 
     private EventBus eventBus;
@@ -31,12 +24,11 @@ public class RootApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         Scene scene = new Scene(new BorderPane(), 1024, 640);
-
         this.screenManager = new ScreenManager(scene);
 
         registerGlobalEventHandlers();
 
-        BaseScreen loginScreen = new LoginScreen(eventBus /*, authService, ... */);
+        BaseScreen loginScreen = new LoginScreen(eventBus);
         screenManager.show(loginScreen);
 
         primaryStage.setTitle("PeerLock");
@@ -53,8 +45,8 @@ public class RootApp extends Application {
     private void onAuthSuccess(AuthSuccessEvent event) {
         System.out.println("Authenticated as: " + event.getUsername());
 
-        // BaseScreen mainScreen = new MainScreen(eventBus /*, other deps */);
-        // screenManager.show(mainScreen);
+        BaseScreen mainScreen = new MainScreen(eventBus, event.getUsername());
+        screenManager.show(mainScreen);
     }
 
     @Override
