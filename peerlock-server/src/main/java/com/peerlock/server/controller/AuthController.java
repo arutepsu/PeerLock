@@ -1,11 +1,17 @@
 package com.peerlock.server.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.peerlock.common.dto.AuthRequest;
 import com.peerlock.common.dto.AuthResponse;
 import com.peerlock.server.service.AuthService;
+
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
 
 /**
  * REST endpoints for authentication (register & login).

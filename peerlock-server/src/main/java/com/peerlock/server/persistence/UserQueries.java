@@ -1,0 +1,24 @@
+package com.peerlock.server.persistence;
+
+public final class UserQueries {
+
+    private UserQueries() {}
+
+    public static final String INSERT_OR_UPDATE = """
+        MERGE INTO users (username, password_hash, created_at)
+        KEY (username)
+        VALUES (?, ?, ?)
+        """;
+
+    public static final String FIND_BY_USERNAME = """
+        SELECT username, password_hash, created_at
+        FROM users
+        WHERE username = ?
+        """;
+
+    public static final String EXISTS_BY_USERNAME = """
+        SELECT 1
+        FROM users
+        WHERE username = ?
+        """;
+}

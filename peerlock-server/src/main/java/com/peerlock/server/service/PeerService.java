@@ -1,41 +1,27 @@
 package com.peerlock.server.service;
 
-import com.peerlock.common.model.PeerStatus;
-import com.peerlock.server.domain.PeerInfo;
-import com.peerlock.server.repository.PeerRegistry;
-import org.springframework.stereotype.Service;
-
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * Application service that encapsulates peer-related business logic.
- */
+import org.springframework.stereotype.Service;
+
+import com.peerlock.common.model.PeerInfo;
+import com.peerlock.common.model.PeerStatus;
+import com.peerlock.server.repository.PeerRegistry;
+
 @Service
 public class PeerService {
 
-    private final PeerRegistry registry;
+    private final PeerRegistry peerRegistry;
 
-    /**
-     * How long a peer is considered "online" since its lastSeen timestamp.
-     * You can later move this to configuration (application.yml).
-     */
-    private final Duration onlineTimeout = Duration.ofMinutes(2);
-
-    public PeerService(PeerRegistry registry) {
-        this.registry = registry;
+    public PeerService(PeerRegistry peerRegistry) {
+        this.peerRegistry = peerRegistry;
     }
 
     /**
-     * Register a new peer or update an existing one for the given user.
-     *
-     * @param username the owning user's username (from auth token)
-     * @param host     host/ip where the P2P client is listening
-     * @param port     TCP port where the P2P client is listening
-     * @return the stored PeerInfo
+     * Register or update the current user's peer info.
      */
-    public PeerInfo registerOrUpdate(String username, String host, int port) {
+    public void heartbeat(String username, String host, int port) {
         PeerInfo info = new PeerInfo(
                 username,
                 host,
@@ -43,27 +29,45 @@ public class PeerService {
                 PeerStatus.ONLINE,
                 Instant.now()
         );
-        registry.registerOrUpdate(info);
-        return info;
+        peerRegistry.registerOrUpdate(info);
     }
 
     /**
-     * List peers that are currently considered online.
+     * List all online peers. You can choose to exclude the requesting user if you want.
      */
-    public List<PeerInfo> listOnlinePeers() {
-        Instant threshold = Instant.now().minus(onlineTimeout);
-        return registry.listAll().stream()
-                .filter(p -> p.status() == PeerStatus.OFFLINE || p.status() == PeerStatus.ONLINE) // keep if you later support OFFLINE explicitly
+    public List<PeerInfo> getOnlinePeers(String requestingUsername) {
+        return peerRegistry.listAll().stream()
                 .filter(p -> p.status() == PeerStatus.ONLINE)
-                .filter(p -> p.lastSeen().isAfter(threshold))
+                // .filter(p -> !p.username().equals(requestingUsername)) // optional: hide self
                 .toList();
     }
 
     /**
-     * Get a peer by username or throw if not found.
+     * Get a specific peer by username.
      */
-    public PeerInfo getPeer(String username) {
-        return registry.findByUsername(username)
-                .orElseThrow(() -> new PeerNotFoundException(username));
+    public PeerInfo getPeer(String requestingUsername, String targetUsername) {
+        return peerRegistry.findByUsername(targetUsername)
+                .orElseThrow(() -> new PeerNotFoundException("Peer not found: " + targetUsername));
+    }
+
+    /**
+     * Mark the current user's peer as OFFLINE.
+     */
+    public void markOffline(String username) {
+        peerRegistry.findByUsername(username).ifPresent(current -> {
+            PeerInfo updated = new PeerInfo(
+                    current.username(),
+                    current.host(),
+                    current.port(),
+                    PeerStatus.OFFLINE,
+                    Instant.now()
+            );
+            peerRegistry.registerOrUpdate(updated);
+        });
+    }
+
+    public PeerInfo getOwnPeer(String username) {
+        return peerRegistry.findByUsername(username)
+                .orElseThrow(() -> new PeerNotFoundException("Peer not registered: " + username));
     }
 }

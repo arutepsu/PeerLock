@@ -1,9 +1,9 @@
 package com.peerlock.server.repository;
 
-import com.peerlock.server.domain.PeerInfo;
-
 import java.util.List;
 import java.util.Optional;
+
+import com.peerlock.common.model.PeerInfo;
 
 /**
  * Abstraction over peer storage.
