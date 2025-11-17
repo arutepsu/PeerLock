@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.peerlock</groupId>
+        <artifactId>peerlock</artifactId>
+        <version>peerlock_1</version>
+    </parent>
+
+    <artifactId>peerlock-client</artifactId>
+    <name>PeerLock Client</name>
+    <packaging>jar</packaging>
+
+    <properties>
+        <java.version>21</java.version>
+        <javafx.version>21.0.2</javafx.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.1</version>
+        </dependency>
+         <dependency>
+            <groupId>com.peerlock</groupId>
+            <artifactId>peerlock-common</artifactId>
+            <version>peerlock_1</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.2</version>
+                <configuration>
+                    <mainClass>com.peerlock.client.ClientAppLauncher</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.peerlock.client.ClientAppLauncher</mainClass>
+                    <modules>
+                        <module>javafx.controls</module>
+                        <module>javafx.fxml</module>
+                        <module>javafx.graphics</module>
+                    </modules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
