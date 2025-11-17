@@ -2,15 +2,16 @@ package com.peerlock.server.controller;
 
 import java.util.List;
 
-import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.peerlock.common.dto.PeerInfoResponse;
+import com.peerlock.common.dto.RegisterPeerRequest;
 import com.peerlock.common.model.PeerInfo;
 import com.peerlock.server.service.PeerService;
 
@@ -26,37 +27,65 @@ public class PeerController {
         this.peerService = peerService;
     }
 
+    /**
+     * Heartbeat / register endpoint:
+     * - username comes from the authenticated principal
+     * - host from the HTTP request (remote addr)
+     * - port from the request body
+     */
     @PostMapping("/heartbeat")
-    public void heartbeat(@RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
-                          @RequestBody HeartbeatRequest request,
+    public void heartbeat(Authentication authentication,
+                          @RequestBody RegisterPeerRequest request,
                           HttpServletRequest servletRequest) {
-        String token = extractToken(authHeader);
+
+        String username = (String) authentication.getPrincipal();
         String host = servletRequest.getRemoteAddr();
 
-        peerService.heartbeat(token, host, request.port());
+        peerService.heartbeat(username, host, request.port());
     }
 
+    /**
+     * Get list of online peers.
+     */
     @GetMapping("/online")
-    public List<PeerInfo> getOnlinePeers(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        String token = extractToken(authHeader);
-        return peerService.getOnlinePeers(token);
+    public List<PeerInfoResponse> getOnlinePeers(Authentication authentication) {
+        String requestingUser = (String) authentication.getPrincipal();
+
+        List<PeerInfo> peers = peerService.getOnlinePeers(requestingUser);
+
+        return peers.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
+    /**
+     * Get info about a specific peer by username.
+     */
     @GetMapping("/{username}")
-    public PeerInfo getPeer(
-            @PathVariable String username,
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-        String token = extractToken(authHeader);
-        return peerService.getPeer(token, username);
+    public PeerInfoResponse getPeer(@PathVariable String username,
+                                    Authentication authentication) {
+        String requestingUser = (String) authentication.getPrincipal();
+
+        PeerInfo peer = peerService.getPeer(requestingUser, username);
+        return toResponse(peer);
     }
 
-    public record HeartbeatRequest(int port) {}
+    
+    @GetMapping("/me")
+    public PeerInfoResponse getMyPeer(Authentication authentication) {
+        String username = (String) authentication.getPrincipal();
 
-    private String extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new IllegalArgumentException("Missing or invalid Authorization header");
-        }
-        return authHeader.substring("Bearer ".length());
+        PeerInfo peer = peerService.getOwnPeer(username);
+        return toResponse(peer);
+    }
+
+    private PeerInfoResponse toResponse(PeerInfo peer) {
+        return new PeerInfoResponse(
+                peer.username(),
+                peer.host(),
+                peer.port(),
+                peer.status(),
+                peer.lastSeen()
+        );
     }
 }

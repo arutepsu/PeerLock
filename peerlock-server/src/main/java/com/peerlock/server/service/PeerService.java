@@ -13,16 +13,15 @@ import com.peerlock.server.repository.PeerRegistry;
 public class PeerService {
 
     private final PeerRegistry peerRegistry;
-    private final AuthService authService;
 
-    public PeerService(PeerRegistry peerRegistry, AuthService authService) {
+    public PeerService(PeerRegistry peerRegistry) {
         this.peerRegistry = peerRegistry;
-        this.authService = authService;
     }
 
-    public void heartbeat(String accessToken, String host, int port) {
-        String username = authService.getUsernameFromToken(accessToken);
-
+    /**
+     * Register or update the current user's peer info.
+     */
+    public void heartbeat(String username, String host, int port) {
         PeerInfo info = new PeerInfo(
                 username,
                 host,
@@ -33,23 +32,28 @@ public class PeerService {
         peerRegistry.registerOrUpdate(info);
     }
 
-    public List<PeerInfo> getOnlinePeers(String accessToken) {
-        authService.getUsernameFromToken(accessToken);
-
+    /**
+     * List all online peers. You can choose to exclude the requesting user if you want.
+     */
+    public List<PeerInfo> getOnlinePeers(String requestingUsername) {
         return peerRegistry.listAll().stream()
                 .filter(p -> p.status() == PeerStatus.ONLINE)
+                // .filter(p -> !p.username().equals(requestingUsername)) // optional: hide self
                 .toList();
     }
 
-    public PeerInfo getPeer(String accessToken, String targetUsername) {
-        authService.getUsernameFromToken(accessToken);
-
+    /**
+     * Get a specific peer by username.
+     */
+    public PeerInfo getPeer(String requestingUsername, String targetUsername) {
         return peerRegistry.findByUsername(targetUsername)
                 .orElseThrow(() -> new PeerNotFoundException("Peer not found: " + targetUsername));
     }
 
-    public void markOffline(String accessToken) {
-        String username = authService.getUsernameFromToken(accessToken);
+    /**
+     * Mark the current user's peer as OFFLINE.
+     */
+    public void markOffline(String username) {
         peerRegistry.findByUsername(username).ifPresent(current -> {
             PeerInfo updated = new PeerInfo(
                     current.username(),
@@ -60,5 +64,10 @@ public class PeerService {
             );
             peerRegistry.registerOrUpdate(updated);
         });
+    }
+
+    public PeerInfo getOwnPeer(String username) {
+        return peerRegistry.findByUsername(username)
+                .orElseThrow(() -> new PeerNotFoundException("Peer not registered: " + username));
     }
 }
