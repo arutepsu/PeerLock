@@ -1,43 +1,62 @@
 package com.peerlock.ui.event;
 
-import javafx.application.Platform;
-
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+
+import javafx.application.Platform;
 
 public class EventBus {
 
-    private final Map<Class<? extends UiEvent>, List<Consumer<? extends UiEvent>>> listeners =
+    // Map: event type -> listeners
+    private final Map<Class<? extends UiEvent>, List<Consumer<UiEvent>>> listeners =
             new ConcurrentHashMap<>();
 
+    /**
+     * Subscribe to a specific event type.
+     */
     public <T extends UiEvent> void subscribe(Class<T> eventType, Consumer<T> listener) {
-        listeners.computeIfAbsent(eventType, k -> new ArrayList<>())
-                 .add(listener);
+        List<Consumer<UiEvent>> list =
+                listeners.computeIfAbsent(eventType, k -> new CopyOnWriteArrayList<>());
+
+        @SuppressWarnings("unchecked")
+        Consumer<UiEvent> casted = (Consumer<UiEvent>) listener;
+
+        list.add(casted);
     }
 
+    /**
+     * Unsubscribe a listener from a specific event type.
+     */
     public <T extends UiEvent> void unsubscribe(Class<T> eventType, Consumer<T> listener) {
-        List<Consumer<? extends UiEvent>> list = listeners.get(eventType);
-        if (list != null) {
-            list.remove(listener);
-        }
-    }
-
-    public void publish(UiEvent event) {
-        Class<? extends UiEvent> eventType = event.getClass();
-        List<Consumer<? extends UiEvent>> list = listeners.get(eventType);
+        List<Consumer<UiEvent>> list = listeners.get(eventType);
         if (list == null) {
             return;
         }
 
-        // Make a snapshot to avoid ConcurrentModification
-        List<Consumer<? extends UiEvent>> snapshot = new ArrayList<>(list);
+        @SuppressWarnings("unchecked")
+        Consumer<UiEvent> casted = (Consumer<UiEvent>) listener;
 
-        for (Consumer<? extends UiEvent> rawConsumer : snapshot) {
-            @SuppressWarnings("unchecked")
-            Consumer<UiEvent> consumer = (Consumer<UiEvent>) rawConsumer;
+        list.remove(casted);
+        if (list.isEmpty()) {
+            listeners.remove(eventType);
+        }
+    }
 
-            // Always route to JavaFX thread for UI safety
+    /**
+     * Publish an event to all listeners of its exact type.
+     * Delivery is always done on the JavaFX Application Thread.
+     */
+    public void publish(UiEvent event) {
+        Class<? extends UiEvent> eventType = event.getClass();
+        List<Consumer<UiEvent>> list = listeners.get(eventType);
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+
+        for (Consumer<UiEvent> consumer : list) {
             Platform.runLater(() -> consumer.accept(event));
         }
     }
