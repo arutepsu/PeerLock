@@ -9,6 +9,40 @@
   🔐 JavaFX Client • 🧩 Spring Boot Auth Server • 📡 P2P TCP Sockets
 </p>
 
+<p align="center">
+
+  <!-- Java -->
+  <img src="https://img.shields.io/badge/Java-21-007396?style=for-the-badge&logo=openjdk&logoColor=white" />
+
+  <!-- Spring Boot -->
+  <img src="https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
+
+  <!-- JavaFX (no native logo, using OpenJDK) -->
+  <img src="https://img.shields.io/badge/JavaFX-1F8ACB?style=for-the-badge&logo=openjdk&logoColor=white" />
+
+  <!-- Maven -->
+  <img src="https://img.shields.io/badge/Maven-Build_Tool-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" />
+
+  <!-- TCP/P2P (no official logo → use generic) -->
+  <img src="https://img.shields.io/badge/P2P_Networking-444?style=for-the-badge&logo=network&logoColor=white" />
+
+  <!-- JSON (valid logo name: json) -->
+  <img src="https://img.shields.io/badge/JSON-000?style=for-the-badge&logo=json&logoColor=white" />
+
+  <!-- SQLite -->
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
+
+  <!-- BCrypt (no official logo → use lock) -->
+  <img src="https://img.shields.io/badge/BCrypt-555?style=for-the-badge&logo=lock&logoColor=white" />
+
+  <!-- REST API (no official logo → use swagger) -->
+  <img src="https://img.shields.io/badge/REST_API-0052CC?style=for-the-badge&logo=swagger&logoColor=white" />
+
+  <!-- Token Auth (use JSON Web Tokens) -->
+  <img src="https://img.shields.io/badge/Token_Auth-JWT_Style-CC0000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" />
+
+</p>
+
 ---
 
 # 🚀 Overview
