@@ -1,5 +1,12 @@
 package com.peerlock.ui.screen;
 
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+
 import com.peerlock.client.p2p.PeerSocketClient;
 import com.peerlock.client.p2p.PeerSocketServer;
 import com.peerlock.client.peer.PeerClient;
@@ -7,14 +14,18 @@ import com.peerlock.common.model.PeerInfo;
 import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.EventBus;
 import com.peerlock.ui.event.IncomingMessageEvent;
+import com.peerlock.ui.event.LogoutEvent;
+import com.peerlock.ui.utils.Styles;
+
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 public class MainScreen extends BaseScreen {
 
@@ -26,8 +37,9 @@ public class MainScreen extends BaseScreen {
 
     private final PeerSocketServer socketServer;
     private final PeerSocketClient socketClient;
+    private final ExecutorService ioExecutor = Executors.newCachedThreadPool();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    // UI
     private Label headerLabel;
     private ListView<PeerInfo> peersList;
     private TextArea chatArea;
@@ -35,7 +47,6 @@ public class MainScreen extends BaseScreen {
     private Button sendButton;
     private Button logoutButton;
 
-    // EventBus listener
     private Consumer<IncomingMessageEvent> incomingMessageListener;
 
     public MainScreen(EventBus eventBus,
@@ -55,19 +66,24 @@ public class MainScreen extends BaseScreen {
 
     @Override
     protected void buildUI() {
-        // header
-        headerLabel = new Label("PeerLock • Logged in as " + currentUser + " (listening on " + listeningPort + ")");
+        Styles.applyMain(root);
+        root.getStyleClass().add("main-root");
+
+        headerLabel = new Label("PeerLock • Logged in as " + currentUser + " (port " + listeningPort + ")");
+        headerLabel.getStyleClass().add("header-label");
+
         logoutButton = new Button("Logout");
+        logoutButton.getStyleClass().add("logout-button");
 
         HBox headerBar = new HBox(10, headerLabel, logoutButton);
-        headerBar.setPadding(new Insets(10));
+        headerBar.getStyleClass().add("header-bar");
 
-        // peers list
         peersList = new ListView<>();
-        peersList.setPlaceholder(new Label("No peers online yet"));
+        peersList.getStyleClass().add("peers-list");
+
+        peersList.setPlaceholder(new Label("No peers online"));
         peersList.setPrefWidth(220);
 
-        // pretty display: show "username (host:port)"
         peersList.setCellFactory(listView -> new ListCell<>() {
             @Override
             protected void updateItem(PeerInfo item, boolean empty) {
@@ -77,21 +93,24 @@ public class MainScreen extends BaseScreen {
                 } else {
                     setText(item.username() + " (" + item.host() + ":" + item.port() + ")");
                 }
+                getStyleClass().add("list-cell");
             }
         });
 
-        // chat area
         chatArea = new TextArea();
         chatArea.setEditable(false);
         chatArea.setWrapText(true);
+        chatArea.getStyleClass().add("chat-area");
 
-        // message input
         messageField = new TextField();
         messageField.setPromptText("Type a message...");
+        messageField.getStyleClass().add("message-field");
+
         sendButton = new Button("Send");
+        sendButton.getStyleClass().add("send-button");
 
         HBox inputBar = new HBox(8, messageField, sendButton);
-        inputBar.setPadding(new Insets(8));
+        inputBar.getStyleClass().add("input-bar");
 
         BorderPane centerPane = new BorderPane();
         centerPane.setCenter(chatArea);
@@ -100,14 +119,8 @@ public class MainScreen extends BaseScreen {
         root.setTop(headerBar);
         root.setLeft(peersList);
         root.setCenter(centerPane);
-
-        // start listening for incoming messages
-        socketServer.start();
-        sendHeartbeatAsync();
-        // TODO: send heartbeat to backend here with (accessToken, listeningPort)
-
-        loadPeersAsync();
     }
+
 
     @Override
     protected void registerListeners() {
@@ -115,15 +128,24 @@ public class MainScreen extends BaseScreen {
         messageField.setOnAction(e -> sendMessage());
 
         logoutButton.setOnAction(e -> {
-            // TODO: publish LogoutEvent to go back to LoginScreen
-            chatArea.clear();
-            peersList.getItems().clear();
+            eventBus.publish(new LogoutEvent(currentUser, accessToken));
         });
 
-        incomingMessageListener = event -> {
-            chatArea.appendText("[" + event.getFromUsername() + " → me]: " + event.getMessage() + "\n");
-        };
+        incomingMessageListener = event ->
+                chatArea.appendText("[" + event.getFromUsername() + " → me]: " + event.getMessage() + "\n");
+
         eventBus.subscribe(IncomingMessageEvent.class, incomingMessageListener);
+
+        socketServer.start();
+        sendHeartbeatAsync();
+
+        loadPeersAsync();
+          scheduler.scheduleAtFixedRate(
+            this::loadPeersAsync,
+            5,
+            10,
+            TimeUnit.SECONDS
+    );
     }
 
     private void sendMessage() {
@@ -140,8 +162,7 @@ public class MainScreen extends BaseScreen {
 
         messageField.clear();
 
-        // send over TCP on a background thread
-        new Thread(() -> {
+        ioExecutor.submit(() -> {
             try {
                 socketClient.sendMessage(target, text);
                 Platform.runLater(() ->
@@ -153,44 +174,39 @@ public class MainScreen extends BaseScreen {
                         showInfo("Failed to send message to " + target.username() + ": " + e.getMessage())
                 );
             }
-        }, "send-message-to-" + target.username()).start();
+        });
     }
-    
+
     private void sendHeartbeatAsync() {
-        new Thread(() -> {
+        ioExecutor.submit(() -> {
             try {
                 peerClient.sendHeartbeat(accessToken, listeningPort);
-                Platform.runLater(() ->
-                        chatArea.appendText(
-                                "[INFO] Heartbeat sent on port " + listeningPort + "\n")
-                );
+                showInfo("Heartbeat sent on port " + listeningPort);
             } catch (Exception e) {
                 e.printStackTrace();
-                Platform.runLater(() ->
-                        chatArea.appendText(
-                                "[ERROR] Heartbeat failed: " + e.getMessage() + "\n")
-                );
+                showInfo("Heartbeat failed: " + e.getMessage());
             }
-        }, "heartbeat-thread").start();
+        });
     }
 
     private void loadPeersAsync() {
-        new Thread(() -> {
+        ioExecutor.submit(() -> {
             try {
                 List<PeerInfo> peers = peerClient.getOnlinePeers(accessToken);
                 Platform.runLater(() -> peersList.getItems().setAll(peers));
             } catch (Exception e) {
                 e.printStackTrace();
-                Platform.runLater(() ->
-                        showInfo("Failed to load peers: " + e.getMessage())
-                );
+                showInfo("Failed to load peers: " + e.getMessage());
             }
-        }, "load-peers-thread").start();
+        });
     }
 
     private void showInfo(String msg) {
-        // simple: write into chatArea, or you can use a dialog
-        chatArea.appendText("[INFO] " + msg + "\n");
+        if (Platform.isFxApplicationThread()) {
+            chatArea.appendText("[INFO] " + msg + "\n");
+        } else {
+            Platform.runLater(() -> chatArea.appendText("[INFO] " + msg + "\n"));
+        }
     }
 
     @Override
@@ -199,5 +215,7 @@ public class MainScreen extends BaseScreen {
             eventBus.unsubscribe(IncomingMessageEvent.class, incomingMessageListener);
         }
         socketServer.stop();
+        ioExecutor.shutdownNow();
+        scheduler.shutdownNow();
     }
 }

@@ -1,5 +1,12 @@
 package com.peerlock.server.config;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import javax.sql.DataSource;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,8 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.peerlock.server.persistence.JdbcUserRepository;
 import com.peerlock.server.repository.InMemoryPeerRegistry;
-import com.peerlock.server.repository.InMemoryUserRepository;
 import com.peerlock.server.repository.PeerRegistry;
 import com.peerlock.server.repository.SessionTokenStore;
 import com.peerlock.server.repository.UserRepository;
@@ -24,10 +31,9 @@ public class ServerConfig {
     public PeerRegistry peerRegistry() {
         return new InMemoryPeerRegistry();
     }
-
     @Bean
-    public UserRepository userRepository() {
-        return new InMemoryUserRepository();
+    public UserRepository userRepository(DataSource dataSource) {
+        return new JdbcUserRepository(dataSource);
     }
 
     @Bean
@@ -58,5 +64,23 @@ public class ServerConfig {
                 .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public DataSource dataSource() {
+        String userHome = System.getProperty("user.home");
+        Path dbDir = Paths.get(userHome, ".peerlock", "server");
+        try {
+            Files.createDirectories(dbDir);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create DB directory: " + dbDir, e);
+        }
+
+        Path dbFile = dbDir.resolve("peerlock.db");
+        String url = "jdbc:sqlite:" + dbFile.toAbsolutePath();
+
+        org.sqlite.SQLiteDataSource ds = new org.sqlite.SQLiteDataSource();
+        ds.setUrl(url);
+        return ds;
     }
 }

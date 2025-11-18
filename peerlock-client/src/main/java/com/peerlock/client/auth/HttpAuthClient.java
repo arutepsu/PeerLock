@@ -17,7 +17,7 @@ public class HttpAuthClient implements AuthClient {
 
     public HttpAuthClient(String baseUrl) {
         this.httpClient = HttpClient.newHttpClient();
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = JsonConfig.MAPPER;
         this.baseUrl = baseUrl;
     }
 
@@ -50,7 +50,7 @@ public class HttpAuthClient implements AuthClient {
         }
 
         // Map your GlobalExceptionHandler responses to something meaningful
-        // Your handler currently returns raw String bodies, so just use that:
+        // Handler currently returns raw String bodies, so just use that:
         throw new RuntimeException("Auth request failed: HTTP " + status + " - " + responseBody);
     }
 }
