@@ -133,5 +133,4 @@ The JavaFX window should now open, allowing you to:
 - Secure handshake occurs
 - Chat begins P2P
 
---- 
 ## 👨‍💻 Developed by Arutepsu
