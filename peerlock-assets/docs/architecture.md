@@ -4,6 +4,32 @@
        height="400" />
 </p>
 
+<p align="center">
+
+  <img src="https://img.shields.io/badge/Java_21-LTS-orange?style=for-the-badge&logo=openjdk&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/Spring_Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/JavaFX-1F8ACB?style=for-the-badge&logo=openjdk&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/P2P%20TCP%20Sockets-444?style=for-the-badge&logo=lock&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/JSON-000?style=for-the-badge&logo=json&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/BCrypt-3A3A3A?style=for-the-badge&logo=lock&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/REST_API-0052CC?style=for-the-badge&logo=api&logoColor=white" />
+
+  <img src="https://img.shields.io/badge/Token_Auth-JWT_Style-CC0000?style=for-the-badge&logo=jsonwebtokens&logoColor=white" />
+
+</p>
+
+
+
 # 🧠 PeerLock Architecture
 
 PeerLock uses a hybrid architecture:  
