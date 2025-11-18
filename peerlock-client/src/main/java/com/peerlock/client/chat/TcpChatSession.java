@@ -13,7 +13,10 @@ import java.util.concurrent.Executors;
 import javax.crypto.SecretKey;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.peerlock.client.chat.history.MessageHistorySyncService;
+import com.peerlock.client.chat.history.MessageStore;
 import com.peerlock.client.crypto.Crypto;
+import com.peerlock.common.dto.ChatMessageDto;
 
 public class TcpChatSession implements ChatSession {
 
@@ -25,18 +28,25 @@ public class TcpChatSession implements ChatSession {
     private final SecretKey sessionKey;
     private final PrintWriter out;
     private final BufferedReader in;
-
+    private final MessageStore messageStore;
+    private final MessageHistorySyncService historySyncService;
     private final ExecutorService readerExecutor = Executors.newSingleThreadExecutor();
+
     private MessageListener listener;
 
     public TcpChatSession(Socket socket,
                           String localUsername,
                           String remoteUsername,
-                          SecretKey sessionKey) {
+                          SecretKey sessionKey,
+                          MessageStore messageStore,
+                          MessageHistorySyncService historySyncService) {
         this.socket = socket;
         this.localUsername = localUsername;
         this.remoteUsername = remoteUsername;
         this.sessionKey = sessionKey;
+        this.messageStore = messageStore;
+        this.historySyncService = historySyncService;
+
         try {
             this.out = new PrintWriter(
                     new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true
@@ -57,9 +67,9 @@ public class TcpChatSession implements ChatSession {
     }
 
     @Override
-    public void sendMessage(ChatMessage message) {
+    public void sendMessage(ChatMessageDto message) {
         try {
-            // Optional: sanity check sender/to
+            // Optional: sanity checks
             // if (!message.from().equals(localUsername) || !message.to().equals(remoteUsername)) { ... }
 
             byte[] plaintext = MAPPER.writeValueAsBytes(message);
@@ -67,6 +77,12 @@ public class TcpChatSession implements ChatSession {
 
             String line = "MSG|" + enc.nonceBase64() + "|" + enc.ciphertextBase64();
             out.println(line);
+
+            // 🔹 Persist locally
+            messageStore.appendMessage(message);
+
+            // 🔹 Push to remote (non-blocking)
+            readerExecutor.submit(() -> historySyncService.pushToRemote(message));
         } catch (Exception e) {
             // log in real app
             e.printStackTrace();
@@ -84,9 +100,16 @@ public class TcpChatSession implements ChatSession {
                 String line;
                 while ((line = in.readLine()) != null) {
                     if (line.startsWith("MSG|")) {
-                        ChatMessage msg = parseEncryptedMessage(line);
-                        if (listener != null && msg != null) {
-                            listener.onMessage(msg);
+                        ChatMessageDto msg = parseEncryptedMessage(line);
+                        if (msg != null) {
+                            // 🔹 Persist incoming message
+                            messageStore.appendMessage(msg);
+                            // 🔹 Push to remote
+                            readerExecutor.submit(() -> historySyncService.pushToRemote(msg));
+
+                            if (listener != null) {
+                                listener.onMessage(msg);
+                            }
                         }
                     } else if (line.startsWith("BYE|")) {
                         // optional: handle graceful close
@@ -104,7 +127,7 @@ public class TcpChatSession implements ChatSession {
         });
     }
 
-    private ChatMessage parseEncryptedMessage(String line) {
+    private ChatMessageDto parseEncryptedMessage(String line) {
         try {
             // MSG|nonce|ciphertext
             String[] parts = line.split("\\|", 3);
@@ -118,7 +141,7 @@ public class TcpChatSession implements ChatSession {
             byte[] plaintext = Crypto.decrypt(sessionKey, nonceB64, cipherB64);
             String json = new String(plaintext, StandardCharsets.UTF_8);
 
-            return MAPPER.readValue(json, ChatMessage.class);
+            return MAPPER.readValue(json, ChatMessageDto.class);
         } catch (Exception e) {
             // log in real app
             e.printStackTrace();

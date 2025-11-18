@@ -2,13 +2,13 @@ package com.peerlock.client.chat.history;
 
 import java.util.List;
 
-import com.peerlock.client.chat.ChatMessage;
+import com.peerlock.common.dto.ChatMessageDto;
 
 public interface MessageStore {
 
-    void appendMessage(ChatMessage message);
+    void appendMessage(ChatMessageDto message);
 
-    List<ChatMessage> getHistoryWith(String otherUsername);
+    List<ChatMessageDto> getHistoryWith(String otherUsername);
 
     void clearHistoryWith(String otherUsername);
     

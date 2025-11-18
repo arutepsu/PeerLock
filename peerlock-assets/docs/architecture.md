@@ -4,6 +4,7 @@
        height="400" />
 </p>
 
+
 # 🧠 PeerLock Architecture
 
 PeerLock uses a hybrid architecture:  

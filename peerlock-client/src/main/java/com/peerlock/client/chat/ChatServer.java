@@ -9,19 +9,30 @@ import java.util.concurrent.Executors;
 
 import javax.crypto.SecretKey;
 
+import com.peerlock.client.chat.history.MessageHistorySyncService;
+import com.peerlock.client.chat.history.MessageStore;
+
 public class ChatServer implements AutoCloseable {
 
     private final String localUsername;
     private final int port;
+    private final MessageStore messageStore;
+    private final MessageHistorySyncService historySyncService;
     private final IncomingSessionHandler handler;
 
     private final ExecutorService acceptorExecutor = Executors.newSingleThreadExecutor();
     private volatile boolean running = false;
     private ServerSocket serverSocket;
 
-    public ChatServer(String localUsername, int port, IncomingSessionHandler handler) {
+    public ChatServer(String localUsername,
+                      int port,
+                      MessageStore messageStore,
+                      MessageHistorySyncService historySyncService,
+                      IncomingSessionHandler handler) {
         this.localUsername = localUsername;
         this.port = port;
+        this.messageStore = messageStore;
+        this.historySyncService = historySyncService;
         this.handler = handler;
     }
 
@@ -43,9 +54,16 @@ public class ChatServer implements AutoCloseable {
                 SecretKey key = result.sharedKey();
                 String remoteUsername = result.remoteUsername();
 
-                ChatSession session = new TcpChatSession(socket, localUsername, remoteUsername, key);
-                handler.onIncomingSession(session);
+                ChatSession session = new TcpChatSession(
+                        socket,
+                        localUsername,
+                        remoteUsername,
+                        key,
+                        messageStore,
+                        historySyncService
+                );
 
+                handler.onIncomingSession(session);
             }
         } catch (IOException e) {
             if (running) {
@@ -63,5 +81,10 @@ public class ChatServer implements AutoCloseable {
             }
         } catch (IOException ignored) {}
         acceptorExecutor.shutdownNow();
+    }
+
+    @FunctionalInterface
+    public interface IncomingSessionHandler {
+        void onIncomingSession(ChatSession session);
     }
 }
