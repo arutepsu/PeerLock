@@ -58,7 +58,7 @@ This project demonstrates:
 # 🧩 Architecture
 For a detailed explanation of how PeerLock works internally — including the server component, client P2P mechanism, message flow, and design see:
 
-👉 **[architecture.md](peerlock-assets\docs\architecture.md)**  
+👉 **[architecture.md](peerlock-assets/docs/architecture.md)**  
 
 # 🧠 How PeerLock Works (Simple Explanation)
 
