@@ -5,9 +5,11 @@ public final class UserQueries {
     private UserQueries() {}
 
     public static final String INSERT_OR_UPDATE = """
-        MERGE INTO users (username, password_hash, created_at)
-        KEY (username)
+        INSERT INTO users (username, password_hash, created_at)
         VALUES (?, ?, ?)
+        ON CONFLICT(username) DO UPDATE SET
+            password_hash = excluded.password_hash,
+            created_at    = excluded.created_at
         """;
 
     public static final String FIND_BY_USERNAME = """
