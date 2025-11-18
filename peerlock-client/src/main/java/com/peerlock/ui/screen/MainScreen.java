@@ -1,15 +1,23 @@
 package com.peerlock.ui.screen;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import com.peerlock.client.chat.history.FileMessageStore;
+import com.peerlock.client.chat.history.HttpMessageHistoryClient;
+import com.peerlock.client.chat.history.MessageHistorySyncService;
+import com.peerlock.client.chat.history.MessageStore;
+import com.peerlock.client.model.MessageHistoryClient;
 import com.peerlock.client.p2p.PeerSocketClient;
 import com.peerlock.client.p2p.PeerSocketServer;
 import com.peerlock.client.peer.PeerClient;
+import com.peerlock.common.dto.ChatMessageDto;
 import com.peerlock.common.model.PeerInfo;
 import com.peerlock.ui.base.BaseScreen;
 import com.peerlock.ui.event.EventBus;
@@ -39,6 +47,8 @@ public class MainScreen extends BaseScreen {
     private final PeerSocketClient socketClient;
     private final ExecutorService ioExecutor = Executors.newCachedThreadPool();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final MessageStore messageStore;
+    private final MessageHistorySyncService historySyncService;
 
     private Label headerLabel;
     private ListView<PeerInfo> peersList;
@@ -46,8 +56,11 @@ public class MainScreen extends BaseScreen {
     private TextField messageField;
     private Button sendButton;
     private Button logoutButton;
-
+    
     private Consumer<IncomingMessageEvent> incomingMessageListener;
+
+    // currently opened chat peer (for showing history + messages)
+    private PeerInfo currentChatPeer;
 
     public MainScreen(EventBus eventBus,
                       String currentUser,
@@ -59,9 +72,18 @@ public class MainScreen extends BaseScreen {
         this.accessToken = accessToken;
         this.peerClient = peerClient;
         this.listeningPort = listeningPort;
-
-        this.socketServer = new PeerSocketServer(listeningPort, eventBus);
-        this.socketClient = new PeerSocketClient(currentUser);
+        this.messageStore = new FileMessageStore(currentUser);
+        MessageHistoryClient historyClient =
+            new HttpMessageHistoryClient("http://localhost:8080/api/v1/messages");
+        this.historySyncService = new MessageHistorySyncService(messageStore, historyClient, accessToken);
+        this.socketServer = new PeerSocketServer(
+                listeningPort,
+                eventBus,
+                currentUser,
+                messageStore,
+                historySyncService
+        );
+        this.socketClient = new PeerSocketClient(currentUser, messageStore, historySyncService);
     }
 
     @Override
@@ -80,7 +102,6 @@ public class MainScreen extends BaseScreen {
 
         peersList = new ListView<>();
         peersList.getStyleClass().add("peers-list");
-
         peersList.setPlaceholder(new Label("No peers online"));
         peersList.setPrefWidth(220);
 
@@ -121,31 +142,40 @@ public class MainScreen extends BaseScreen {
         root.setCenter(centerPane);
     }
 
-
     @Override
     protected void registerListeners() {
         sendButton.setOnAction(e -> sendMessage());
         messageField.setOnAction(e -> sendMessage());
 
-        logoutButton.setOnAction(e -> {
-            eventBus.publish(new LogoutEvent(currentUser, accessToken));
-        });
+        logoutButton.setOnAction(e -> eventBus.publish(new LogoutEvent(currentUser, accessToken)));
 
         incomingMessageListener = event ->
-                chatArea.appendText("[" + event.getFromUsername() + " → me]: " + event.getMessage() + "\n");
+                Platform.runLater(() ->
+                        chatArea.appendText("[" + event.getFromUsername() + " → me]: " + event.getMessage() + "\n")
+                );
 
         eventBus.subscribe(IncomingMessageEvent.class, incomingMessageListener);
 
+
+        peersList.getSelectionModel().selectedItemProperty().addListener((obs, oldPeer, newPeer) -> {
+            currentChatPeer = newPeer;
+            if (newPeer != null) {
+                loadHistoryForPeer(newPeer);
+            } else {
+                chatArea.clear();
+            }
+        });
+
         socketServer.start();
         sendHeartbeatAsync();
-
         loadPeersAsync();
-          scheduler.scheduleAtFixedRate(
-            this::loadPeersAsync,
-            5,
-            10,
-            TimeUnit.SECONDS
-    );
+
+        scheduler.scheduleAtFixedRate(
+                this::loadPeersAsync,
+                5,
+                10,
+                TimeUnit.SECONDS
+        );
     }
 
     private void sendMessage() {
@@ -175,6 +205,42 @@ public class MainScreen extends BaseScreen {
                 );
             }
         });
+    }
+
+
+    /**
+     * Load local history + sync with server for the selected peer.
+     */
+    private void loadHistoryForPeer(PeerInfo peer) {
+        chatArea.clear();
+        showInfo("Loading history with " + peer.username() + "...");
+
+        ioExecutor.submit(() -> {
+            try {
+                List<ChatMessageDto> messages = historySyncService.loadAndSync(peer.username());
+                Platform.runLater(() -> {
+                    chatArea.clear();
+                    for (ChatMessageDto msg : messages) {
+                        appendMessageToChatArea(msg);
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() ->
+                        showInfo("Failed to load history with " + peer.username() + ": " + e.getMessage())
+                );
+            }
+        });
+    }
+
+    private void appendMessageToChatArea(ChatMessageDto msg) {
+        String direction;
+        if (msg.from().equals(currentUser)) {
+            direction = currentUser + " → " + msg.to();
+        } else {
+            direction = msg.from() + " → " + currentUser;
+        }
+        chatArea.appendText("[" + direction + "]: " + msg.content() + "\n");
     }
 
     private void sendHeartbeatAsync() {

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.peerlock.client.chat.ChatMessage;
+import com.peerlock.common.dto.ChatMessageDto;
 
 
 public class FileMessageStore implements MessageStore {
@@ -27,7 +27,7 @@ public class FileMessageStore implements MessageStore {
     }
 
     @Override
-    public void appendMessage(ChatMessage message) {
+    public void appendMessage(ChatMessageDto message) {
         try {
             Path file = getFileFor(message.from(), message.to());
             Files.createDirectories(file.getParent());
@@ -45,15 +45,15 @@ public class FileMessageStore implements MessageStore {
     }
 
     @Override
-    public List<ChatMessage> getHistoryWith(String otherUsername) {
+    public List<ChatMessageDto> getHistoryWith(String otherUsername) {
         Path file = getFileFor(localUsername, otherUsername);
         if (!Files.exists(file)) return List.of();
 
-        List<ChatMessage> result = new ArrayList<>();
+        List<ChatMessageDto> result = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
-                ChatMessage msg = mapper.readValue(line, ChatMessage.class);
+                ChatMessageDto msg = mapper.readValue(line, ChatMessageDto.class);
                 result.add(msg);
             }
         } catch (IOException e) {
