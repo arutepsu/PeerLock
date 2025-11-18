@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="..\main\peerlockShort.png"
+       alt="PeerLock Logo"
+       height="400" />
+</p>
 # 🧠 PeerLock Architecture
 
 PeerLock uses a hybrid architecture:  
