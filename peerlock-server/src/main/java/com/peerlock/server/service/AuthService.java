@@ -1,15 +1,16 @@
 package com.peerlock.server.service;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.peerlock.common.dto.AuthRequest;
 import com.peerlock.common.dto.AuthResponse;
 import com.peerlock.server.domain.UserAccount;
 import com.peerlock.server.repository.SessionTokenStore;
 import com.peerlock.server.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import java.time.Instant;
-import java.util.UUID;
 
 /**
  * Handles user registration, login, and token handling.
@@ -64,6 +65,10 @@ public class AuthService {
     public String getUsernameFromToken(String token) {
         return tokenStore.findUsernameByToken(token)
                 .orElseThrow(InvalidTokenException::new);
+    }
+
+    public void logout(String token) {
+        tokenStore.revoke(token);
     }
 
     private String issueTokenForUser(String username) {
