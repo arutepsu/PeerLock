@@ -1,14 +1,15 @@
 package com.peerlock.client.peer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.peerlock.common.model.PeerInfo;
-
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.peerlock.client.auth.JsonConfig;
+import com.peerlock.common.model.PeerInfo;
 
 public class HttpPeerClient implements PeerClient {
 
@@ -18,7 +19,7 @@ public class HttpPeerClient implements PeerClient {
 
     public HttpPeerClient(String baseUrl) {
         this.httpClient = HttpClient.newHttpClient();
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = JsonConfig.MAPPER;
         this.baseUrl = baseUrl;
     }
 
@@ -54,6 +55,7 @@ public class HttpPeerClient implements PeerClient {
         HttpResponse<String> response =
                 httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+        
         if (response.statusCode() >= 200 && response.statusCode() < 300) {
             return objectMapper.readValue(
                     response.body(),

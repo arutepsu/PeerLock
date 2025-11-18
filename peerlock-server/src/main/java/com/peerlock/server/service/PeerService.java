@@ -36,10 +36,11 @@ public class PeerService {
      * List all online peers. You can choose to exclude the requesting user if you want.
      */
     public List<PeerInfo> getOnlinePeers(String requestingUsername) {
-        return peerRegistry.listAll().stream()
-                .filter(p -> p.status() == PeerStatus.ONLINE)
-                // .filter(p -> !p.username().equals(requestingUsername)) // optional: hide self
-                .toList();
+        List<PeerInfo> all = peerRegistry.listAll();
+        return all.stream()
+                        .filter(p -> p.status() == PeerStatus.ONLINE)
+                        .filter(p -> !p.username().equals(requestingUsername)) // hide self
+                        .toList();
     }
 
     /**

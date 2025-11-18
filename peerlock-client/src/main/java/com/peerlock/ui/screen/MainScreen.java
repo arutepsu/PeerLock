@@ -3,6 +3,8 @@ package com.peerlock.ui.screen;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import com.peerlock.client.p2p.PeerSocketClient;
@@ -36,6 +38,7 @@ public class MainScreen extends BaseScreen {
     private final PeerSocketServer socketServer;
     private final PeerSocketClient socketClient;
     private final ExecutorService ioExecutor = Executors.newCachedThreadPool();
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private Label headerLabel;
     private ListView<PeerInfo> peersList;
@@ -135,7 +138,14 @@ public class MainScreen extends BaseScreen {
 
         socketServer.start();
         sendHeartbeatAsync();
+
         loadPeersAsync();
+          scheduler.scheduleAtFixedRate(
+            this::loadPeersAsync,
+            5,
+            10,
+            TimeUnit.SECONDS
+    );
     }
 
     private void sendMessage() {
@@ -206,5 +216,6 @@ public class MainScreen extends BaseScreen {
         }
         socketServer.stop();
         ioExecutor.shutdownNow();
+        scheduler.shutdownNow();
     }
 }
